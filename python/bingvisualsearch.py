@@ -1,21 +1,31 @@
 import requests, json, os
+import commonutils as cu
 
-def main():
+bing_calls_enabled = False
+
+# Given a url of an image, returns the url of the highest resolution version
+# of that image found with bing visual search. If no larger version is found,
+# returns None
+def get_highest_res_image_for_url(url):
     print("Running!")
 
-    visual_search_results = get_bing_visual_search_results()
+    visual_search_results = get_bing_visual_search_results(url)
 
     default_insights = get_default_insights(visual_search_results)
 
     highest_res_image = find_highest_res_image(default_insights)
     original_image = find_requested_image(default_insights)
 
-    if highest_res_image.get("height") > original_image.get("height"):
-        print("found a bigger image!")
-    else:
-        print("did not find a bigger image!")
+    if highest_res_image is None:
+        print("no other pages had the image")
+        return None
 
-    #print(highest_res_image.get("contentUrl"))
+    if highest_res_image.get("height") > original_image.get("height"):
+        print("found a bigger image")
+        return highest_res_image.get("contentUrl")
+    else:
+        print("did not find a bigger image")
+        return None
 
 
 # returns the default insights tag object from a bing visual search result
@@ -28,7 +38,8 @@ def get_default_insights(visual_search_results):
             return insight_tag
 
 
-# returns the image object of the highest res version of the image searched for using visual search
+# returns the image object of the highest res version of the image in the visual search results.
+# returns None if no other page other than the one inputted into the visual search contains the image.
 # takes the default insights object from the visual search results as a parameter
 def find_highest_res_image(default_insights):
 
@@ -38,6 +49,7 @@ def find_highest_res_image(default_insights):
             break
 
     largest_height = 0
+    largest_image = None
     for image in pages_including.get("data").get("value"):
         if image.get("height") > largest_height:
             largest_height = image.get("height")
@@ -55,10 +67,9 @@ def find_requested_image(default_insights):
             return action.get("image")
 
 
-def get_bing_visual_search_results():
-    print("entered da function")
+def get_bing_visual_search_results(url):
     if bing_calls_enabled:
-        return do_bing_visual_search()
+        return do_bing_visual_search(url)
     else:
         return do_mock_bing_visual_search()
 
@@ -66,17 +77,17 @@ def get_bing_visual_search_results():
 # returns json from file
 def do_mock_bing_visual_search():
     print("reading bing output from file")
-    file = open_file_from_repo_root("/bing visual search samples/output from url.json")
+    file = cu.open_file_from_repo_root("/bing visual search samples/output from wonky request.json")
     return json.load(file)
 
 
 # Returns json from the bing visual search
-def do_bing_visual_search():
+def do_bing_visual_search(url):
     print("getting bing output from visual search")
-    keys = json.load(open_file_from_repo_root('/keys/api-keys.json'))
+    keys = cu.get_api_keys()
     bing_key = keys.get("bing-resource-key")
 
-    imageInfo = {"imageInfo" : {"url" : "http://tehnostiri.ro/wp-content/uploads/2020/09/broaste.jpg"}}
+    imageInfo = {"imageInfo" : {"url" : url}}
 
     BASE_URI = 'https://api.bing.microsoft.com/v7.0/images/visualsearch'
     REQUEST_FILES = {'knowledgeRequest': (None, json.dumps(imageInfo))}
@@ -92,16 +103,6 @@ def do_bing_visual_search():
         raise ex
 
 
-# open a file in the repository using relative path from the root of the repository
-def open_file_from_repo_root(relative_path):
-    parent_directory = os.path.dirname(os.path.dirname(__file__))
-    return open(parent_directory + relative_path)
-
-
 def print_json(obj):
     """Print the object as json"""
     print(json.dumps(obj, sort_keys=True, indent=2, separators=(',', ': ')))
-
-
-bing_calls_enabled = False
-main()
