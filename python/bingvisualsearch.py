@@ -20,7 +20,7 @@ def get_highest_res_image_for_url(url):
         print("no other pages had the image")
         return None
 
-    if highest_res_image.get("height") > original_image.get("height"):
+    if first_image_larger(highest_res_image, original_image):
         print("found a bigger image")
         return highest_res_image.get("contentUrl")
     else:
@@ -48,14 +48,21 @@ def find_highest_res_image(default_insights):
             pages_including = action
             break
 
-    largest_height = 0
     largest_image = None
     for image in pages_including.get("data").get("value"):
-        if image.get("height") > largest_height:
-            largest_height = image.get("height")
+        if first_image_larger(image, largest_image):
             largest_image = image
 
     return largest_image
+
+
+# returns true if the first image is larger in both width and height than the second image.
+# takes two images as parameters. Also returns true if there is no second image, as any
+# image is considered larger than no image
+def first_image_larger(image1, image2):
+    if image2 is None:
+        return True
+    return image1.get("height") > image2.get("height") and image1.get("width") > image2.get("width")
 
 
 # returns the image object associated with the image/url that was the input to the visual search
@@ -77,7 +84,7 @@ def get_bing_visual_search_results(url):
 # returns json from file
 def do_mock_bing_visual_search():
     print("reading bing output from file")
-    file = cu.open_file_from_repo_root("/bing visual search samples/output from wonky request.json")
+    file = cu.open_file_from_repo_root("/bing visual search samples/output from url.json")
     return json.load(file)
 
 
