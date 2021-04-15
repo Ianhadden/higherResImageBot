@@ -1,6 +1,7 @@
 import praw
 import commonutils as cu
 from bingvisualsearch import get_highest_res_image_for_url
+from bingresultscache import get_bing_cache_entry_for_url
 
 targeted_phrases = {'high res', 'higher res'}
 reply_phrase = "Here's the [highest resolution version]({}) of this image I could find"
@@ -13,7 +14,7 @@ def main():
     subreddit = reddit.subreddit("all")
 
     for submission in subreddit.hot(limit=100):
-        if not has_common_image_format(submission.url):
+        if not url_has_potential(submission.url):
             continue
         
         for top_level_comment in submission.comments:
@@ -70,8 +71,14 @@ def get_reddit_instance():
         password=keys.get("reddit-password")
     )
 
-
-def has_common_image_format(url):
-    return url.endswith("png") or url.endswith("jpg") or url.endswith("jpeg")
+# returns true if the url has a common image format and our cache either has
+# no entry for the url or has an entry with an identified higher res version
+def url_has_potential(url):
+    if not (url.endswith("png") or url.endswith("jpg") or url.endswith("jpeg")):
+        return False
+    cache_entry = get_bing_cache_entry_for_url(url)
+    if cache_entry is None:
+        return True
+    return cache_entry.get(url) is not None
 
 main()
