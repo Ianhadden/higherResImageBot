@@ -4,7 +4,7 @@ from bingvisualsearch import get_highest_res_image_for_url
 from bingresultscache import get_bing_cache_entry_for_url
 
 targeted_phrases = {'high res', 'higher res'}
-reply_phrase = "Here's the [highest resolution version]({}) of this image I could find"
+reply_phrase = "[Here's the highest resolution version of this image I could find]({})"
 
 bot_replies_enabled = False
 
@@ -13,7 +13,12 @@ def main():
     reddit = get_reddit_instance()
     subreddit = reddit.subreddit("all")
 
-    for submission in subreddit.hot(limit=100):
+    i = 0
+
+    for submission in subreddit.hot():
+        i = i + 1
+        if i % 10 == 0:
+            print(i)
         if not url_has_potential(submission.url):
             continue
         
@@ -27,6 +32,7 @@ def main():
                 highest_res_url = get_highest_res_image_for_url(submission.url)
                 if highest_res_url is not None:
                     reply_to_comment(top_level_comment, highest_res_url)
+    print("i capped out at {}".format(i))
 
 
 def reply_to_comment(comment, highest_res_url):

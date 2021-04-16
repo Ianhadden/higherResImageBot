@@ -1,13 +1,19 @@
 import requests, json, os
 import commonutils as cu
+from bingresultscache import add_bing_cache_entry, get_bing_cache_entry_for_url
 
-bing_calls_enabled = False
+bing_calls_enabled = True
 
 # Given a url of an image, returns the url of the highest resolution version
 # of that image found with bing visual search. If no larger version is found,
 # returns None
 def get_highest_res_image_for_url(url):
     print("Running!")
+
+    cache_entry = get_bing_cache_entry_for_url(url)
+    if cache_entry is not None:
+        print("Returning cache result of " + cache_entry.get(url))
+        return cache_entry.get(url)
 
     visual_search_results = get_bing_visual_search_results(url)
 
@@ -18,13 +24,16 @@ def get_highest_res_image_for_url(url):
 
     if highest_res_image is None:
         print("no other pages had the image")
+        add_bing_cache_entry(url, None)
         return None
 
     if first_image_larger(highest_res_image, original_image):
         print("found a bigger image")
+        add_bing_cache_entry(url, highest_res_image.get("contentUrl"))
         return highest_res_image.get("contentUrl")
     else:
         print("did not find a bigger image")
+        add_bing_cache_entry(url, None)
         return None
 
 
